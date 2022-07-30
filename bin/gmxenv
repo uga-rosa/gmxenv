@@ -77,6 +77,11 @@ versions() {
   find . -maxdepth 1 -mindepth 1 ! -name "$version" | sed 's/^\.\//  /' | sort
 }
 
+update() {
+  cd "$ROOT"
+  git pull
+}
+
 help() {
   cat <<EOL
 Usage:
@@ -89,6 +94,7 @@ Subcommands:
     install             Install the version specified of gromacs.
     switch              Switch to the version specified.
     versions            Show list of versions installed.
+    update              Self-update. Use git pull.
     help, -h, --help    Show this message.
 
 Arguments:
@@ -107,6 +113,9 @@ case $subcommand in
     ;;
   versions)
     versions
+    ;;
+  update)
+    update
     ;;
   help,-h,--help)
     help
