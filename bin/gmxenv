@@ -5,6 +5,9 @@ ROOT=$(cd $(dirname $(dirname $0)); pwd)
 SHIMS="$ROOT/shims"
 VERSIONS="$ROOT/versions"
 
+LOG_DIR="$ROOT/log"
+mkdir -p "$LOG_DIR"
+
 switch() {
   version=$1
   if [[ -z $version ]]; then
@@ -40,9 +43,12 @@ install() {
   cd "$version"
   mkdir build
   cd build
-  cmake .. -DGMX_BUILD_OWN_FFTW=ON -DGMX_GPU=CUDA -DCMAKE_INSTALL_PREFIX="$install_path" -DGMX_EXTERNAL_BLAS=on -DGMX_EXTERNAL_LAPACK=on
-  make -j $core
-  sudo make -j $core install
+  echo "cmake ..."
+  cmake .. -DGMX_BUILD_OWN_FFTW=ON -DGMX_GPU=CUDA -DCMAKE_INSTALL_PREFIX="$install_path" -DGMX_EXTERNAL_BLAS=on -DGMX_EXTERNAL_LAPACK=on >> "$LOG_DIR/$version.log"
+  echo "make ..."
+  make -j $core >> "$LOG_DIR/$version.log"
+  sudo make -j $core install > "$LOG_DIR/$version.log"
+  echo "done!"
 
   echo "$version" > $SHIMS/version
   echo "Switch to $version"

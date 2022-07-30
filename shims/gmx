@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -e
 
 SHIMS=$(cd $(dirname $0); pwd)
 ROOT=$(dirname $SHIMS)
@@ -14,4 +14,4 @@ if [[ ! -d $GROMACS_PATH ]]; then
 fi
 
 source "$GROMACS_PATH/bin/GMXRC"
-"$GROMACS_PATH/bin/gmx" "$@"
+gmx "$@"
