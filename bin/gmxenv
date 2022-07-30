@@ -117,7 +117,7 @@ case $subcommand in
   update)
     update
     ;;
-  help,-h,--help)
+  help | -h | --help)
     help
     ;;
   *)
