@@ -30,25 +30,41 @@ install() {
     echo "'gmxenv install' requires version"
     exit 1
   fi
+  name="gromacs-$version"
   url="https://ftp.gromacs.org/gromacs/gromacs-$version.tar.gz"
   install_path="$VERSIONS/$version"
   core=$(cat /proc/cpuinfo | grep 'processor' -c)
 
+  logfile="$LOG_DIR/$version.log"
+
   cd /tmp
-  if [[ -d $version ]]; then
-    rm -rf "$version"
+  if [[ -d $name ]]; then
+    rm -rf "$name"
   fi
-  mkdir "$version"
-  curl "$url" | tar zx -C "$version" --strip-components 1
-  cd "$version"
+
+  echo "Download ..."
+  wget "$url" -o $logfile
+  tar xvf "$name.tar.gz" >> "$logfile"
+  rm "$name.tar.gz"
+
+  cd "$name"
   mkdir build
   cd build
-  echo "cmake ..."
-  cmake .. -DGMX_BUILD_OWN_FFTW=ON -DGMX_GPU=CUDA -DCMAKE_INSTALL_PREFIX="$install_path" -DGMX_EXTERNAL_BLAS=on -DGMX_EXTERNAL_LAPACK=on >> "$LOG_DIR/$version.log"
-  echo "make ..."
-  make -j $core >> "$LOG_DIR/$version.log"
-  sudo make -j $core install > "$LOG_DIR/$version.log"
-  echo "done!"
+
+  echo "Cmake ..."
+  cmake .. \
+    -DGMX_BUILD_OWN_FFTW=ON \
+    -DGMX_GPU=CUDA  \
+    -DCMAKE_INSTALL_PREFIX="$install_path"  \
+    -DGMX_EXTERNAL_BLAS=on  \
+    -DGMX_EXTERNAL_LAPACK=on  \
+    >> "$logfile"
+
+  echo "Make ..."
+  make -j $core >> "$logfile" 2>&1
+  sudo make -j $core install >> "$logfile"
+
+  echo "Done!"
 
   echo "$version" > $SHIMS/version
   echo "Switch to $version"
@@ -58,7 +74,7 @@ versions() {
   cd "$VERSIONS"
   version=$(cat $SHIMS/version)
   echo "* $version    now"
-  find . -maxdepth 1 -mindepth 1 ! -name "$version" | sed 's/^\.\//  /'
+  find . -maxdepth 1 -mindepth 1 ! -name "$version" | sed 's/^\.\//  /' | sort
 }
 
 help() {
