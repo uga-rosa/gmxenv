@@ -1,0 +1,17 @@
+#!/bin/bash
+set -eu
+
+SHIMS=$(cd $(dirname $0); pwd)
+ROOT=$(dirname $SHIMS)
+version=$(cat $SHIMS/version)
+version=${version:-${GMX_DEFAULT_VERSION:-}}
+GROMACS_PATH="$ROOT/versions/$version"
+
+if [[ ! -d $GROMACS_PATH ]]; then
+  echo "The version $version is not installed."
+  echo "Run 'gmxenv install $version'"
+  exit 1
+fi
+
+source "$GROMACS_PATH/bin/GMXRC"
+"$GROMACS_PATH/bin/gmx" "$@"

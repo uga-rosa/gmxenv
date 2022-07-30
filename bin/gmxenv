@@ -1,0 +1,96 @@
+#!/bin/bash
+set -e
+
+ROOT=$(cd $(dirname $(dirname $0)); pwd)
+SHIMS="$ROOT/shims"
+VERSIONS="$ROOT/versions"
+
+switch() {
+  version=$1
+  if [[ -z $version ]]; then
+    echo "'gmxenv switch' requires version"
+    exit 1
+  fi
+
+  if [[ -d "$VERSIONS/$version" ]]; then
+    echo $version > "$SHIMS/version"
+  else
+    echo "The version is not installed: $version"
+    echo "Run 'gmxenv install $version'"
+  fi
+}
+
+install() {
+  mkdir -p "$VERSIONS"
+  version=$1
+  if [[ -z $version ]]; then
+    echo "'gmxenv install' requires version"
+    exit 1
+  fi
+  url="https://ftp.gromacs.org/gromacs/gromacs-$version.tar.gz"
+  install_path="$VERSIONS/$version"
+  core=$(cat /proc/cpuinfo | grep 'processor' -c)
+
+  cd /tmp
+  if [[ -d $version ]]; then
+    rm -rf "$version"
+  fi
+  mkdir "$version"
+  curl "$url" | tar zx -C "$version" --strip-components 1
+  cd "$version"
+  mkdir build
+  cd build
+  cmake .. -DGMX_BUILD_OWN_FFTW=ON -DGMX_GPU=CUDA -DCMAKE_INSTALL_PREFIX="$install_path" -DGMX_EXTERNAL_BLAS=on -DGMX_EXTERNAL_LAPACK=on
+  make -j $core
+  sudo make -j $core install
+
+  echo "$version" > $SHIMS/version
+  echo "Switch to $version"
+}
+
+versions() {
+  cd "$VERSIONS"
+  version=$(cat $SHIMS/version)
+  echo "* $version    now"
+  find . -maxdepth 1 -mindepth 1 ! -name "$version" | sed 's/^\.\//  /'
+}
+
+help() {
+  cat <<EOL
+Usage:
+    gmxenv [subcommand] [version]
+gromacs version manager
+You need to add following to .bashrc
+    eval \$(gmxenv init)
+
+Subcommands:
+    install             Install the version specified of gromacs.
+    switch              Switch to the version specified.
+    versions            Show list of versions installed.
+    help, -h, --help    Show this message.
+
+Arguments:
+    version             Required by 'install' and 'switch'. e.g. '2021.6'
+EOL
+}
+
+subcommand=$1
+
+case $subcommand in
+  switch)
+    switch $2
+    ;;
+  install)
+    install $2
+    ;;
+  versions)
+    versions
+    ;;
+  help,-h,--help)
+    help
+    ;;
+  *)
+    echo "Undefined subcommand"
+    help
+    ;;
+esac
